@@ -20,6 +20,7 @@ Core capabilities:
 - Provide cleanly formatted responses for courses, fees, schedules, and registration details.
 - Capture prospective student lead details through the backend service layer.
 - Present a polished ZubeVision-branded frontend experience.
+- Provide an embeddable chat widget for external websites.
 - Keep implementation notes in `implementation.md` for easy project continuation.
 
 ## Project Structure
@@ -165,6 +166,54 @@ UI highlights:
 - Quick prompt buttons
 - Clean assistant message formatting
 - Branded chat bubbles
+
+## Embeddable Chat Widget
+
+The project includes a branded website widget that can be embedded into WordPress, plain HTML, React, PHP, Laravel, and similar websites.
+
+Widget files:
+
+```text
+frontend/public/chat-widget.js
+frontend/app/widget/page.tsx
+frontend/components/WidgetChatInterface.tsx
+```
+
+Local widget page:
+
+```text
+http://localhost:3003/widget
+```
+
+Local widget script:
+
+```text
+http://localhost:3003/chat-widget.js
+```
+
+Basic embed snippet:
+
+```html
+<script
+  src="http://localhost:3003/chat-widget.js"
+  data-client-id="zubevision-tech-academy"
+  data-widget-url="http://localhost:3003/widget"
+  data-color="#00A8A8"
+></script>
+```
+
+Optional attributes:
+
+- `data-client-id`: identifies the site or client using the widget.
+- `data-widget-url`: points to the hosted widget page.
+- `data-color`: controls the floating button color.
+- `data-width`: controls the desktop widget width, for example `390px`.
+- `data-height`: controls the desktop widget height, for example `610px`.
+
+Important local ports:
+
+- The widget frontend runs on `3003`.
+- The widget still talks to the backend through `NEXT_PUBLIC_BACKEND_URL=http://localhost:8003`.
 
 ## Verification
 

@@ -197,6 +197,44 @@ Current UI features:
 - Quick prompt buttons
 - Branded chat bubbles
 - Mobile-friendly responsive layout
+- Embeddable chat widget route and script for external websites
+
+## Embeddable Widget
+
+Widget files added:
+
+```text
+frontend/public/chat-widget.js
+frontend/app/widget/page.tsx
+frontend/components/WidgetChatInterface.tsx
+```
+
+Purpose:
+
+- Add a floating branded chat button to external websites.
+- Open a premium ZubeVision chat panel.
+- Load the assistant inside an iframe from the Next.js widget route.
+- Work on WordPress, plain HTML, React, PHP, Laravel, and similar sites.
+
+Local widget URLs:
+
+```text
+http://localhost:3003/widget
+http://localhost:3003/chat-widget.js
+```
+
+Embed snippet:
+
+```html
+<script
+  src="http://localhost:3003/chat-widget.js"
+  data-client-id="zubevision-tech-academy"
+  data-widget-url="http://localhost:3003/widget"
+  data-color="#00A8A8"
+></script>
+```
+
+Port note: the provided example was corrected from the common `3000` default to the actual project frontend port `3003`. The widget chat still sends messages through the existing frontend API helper, which points to the backend through `NEXT_PUBLIC_BACKEND_URL=http://localhost:8003`.
 
 ## Markdown Response Formatting
 
@@ -270,6 +308,7 @@ As of May 12, 2026:
 - Premium ZubeVision Tech Academy UI is implemented.
 - Logo is in the app and displayed.
 - Markdown-like AI outputs are formatted cleanly.
+- Embeddable widget route and script are implemented with ZubeVision branding.
 - Lint and build pass for frontend.
 - Documentation has been consolidated into one root `README.md`; the frontend README was removed to avoid duplicate project docs.
 
