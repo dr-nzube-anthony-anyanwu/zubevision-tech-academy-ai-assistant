@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+:root {
+  --color-deep-blue: #0a2540;
+  --color-teal: #00a8a8;
+  --color-electric-blue: #3a86ff;
+  --color-light-grey: #f5f7fa;
+  --color-white: #ffffff;
+  --color-dark-grey: #6b7280;
+  --font-body: "Inter", "Segoe UI", Arial, sans-serif;
+  --font-heading: "Poppins", "Montserrat", "Inter", "Segoe UI", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-light-grey);
+  color: var(--color-deep-blue);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
