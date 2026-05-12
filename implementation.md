@@ -18,6 +18,7 @@ The product currently has:
 - A Next.js frontend in `frontend/`
 - A markdown knowledge base in `knowledge_base/knowledge_base.md`
 - A local Python 3.11 virtual environment in `.venv/`
+- One professional root `README.md` as the single public README for the repository
 
 ## Current Local Ports
 
@@ -129,6 +130,8 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8003
 ## Frontend
 
 The frontend is a Next.js app in `frontend/`.
+
+Documentation note: the old `frontend/README.md` was removed. The project now keeps one professional README at the repository root so GitHub displays the correct project overview on the main repo page.
 
 Current scripts:
 
@@ -268,6 +271,7 @@ As of May 12, 2026:
 - Logo is in the app and displayed.
 - Markdown-like AI outputs are formatted cleanly.
 - Lint and build pass for frontend.
+- Documentation has been consolidated into one root `README.md`; the frontend README was removed to avoid duplicate project docs.
 
 ## Recommended Next Steps
 
