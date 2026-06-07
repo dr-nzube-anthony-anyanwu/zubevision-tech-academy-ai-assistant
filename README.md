@@ -2,7 +2,7 @@
 
 ZubeVision Tech Academy AI Assistant is an AI-powered web assistant built to help prospective students get clear, structured answers about ZubeVision Tech Academy programs, fees, schedules, registration, payment information, and academy policies.
 
-The project combines a FastAPI backend, a branded Next.js frontend, a markdown knowledge base, OpenRouter-powered AI responses, and Supabase-ready lead capture.
+The project combines a FastAPI backend, a branded Next.js frontend, a markdown knowledge base, OpenRouter-powered AI responses, Supabase lead capture, and Make-powered email notifications.
 
 ## Author
 
@@ -19,6 +19,7 @@ Core capabilities:
 - Answer academy-related questions using the local knowledge base.
 - Provide cleanly formatted responses for courses, fees, schedules, and registration details.
 - Capture prospective student lead details through the backend service layer.
+- Notify the academy owner or instructor about new leads through Make.
 - Present a polished ZubeVision-branded frontend experience.
 - Provide an embeddable chat widget for external websites.
 - Keep implementation notes in `implementation.md` for easy project continuation.
@@ -40,6 +41,7 @@ Backend:
 - FastAPI
 - Uvicorn
 - Supabase
+- Make webhook automation
 - OpenRouter
 - python-dotenv
 - Pydantic
@@ -116,10 +118,97 @@ OPENROUTER_API_KEY=
 OPENROUTER_MODEL=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+MAKE_WEBHOOK_URL=
 FRONTEND_URL=http://localhost:3003
 BACKEND_HOST=127.0.0.1
 BACKEND_PORT=8003
 ```
+
+`MAKE_WEBHOOK_URL` should be the custom webhook URL from the Make scenario.
+When a complete lead is saved, the backend sends Make these fields:
+`full_name`, `email`, `phone`, `course_of_interest`, `message`, and `source`.
+The lead's `notification_sent` value is changed to `true` only after Make
+accepts the webhook request. Repeated submissions with the same name, email,
+phone, and course reuse the existing lead so they do not send duplicate emails.
+
+## Lead Notification Automation
+
+The lead automation follows this flow:
+
+```text
+Student submits complete details in chat
+             |
+             v
+Backend checks for an existing matching lead
+             |
+             v
+Backend saves a new lead in Supabase when needed
+             |
+             v
+Backend sends the lead to the Make custom webhook
+             |
+             v
+Make sends the configured email notification
+             |
+             v
+Backend marks notification_sent=true in Supabase
+```
+
+The Supabase `leads` table is expected to contain:
+
+```text
+id
+full_name
+email
+phone
+course
+created_at
+notification_sent
+```
+
+Make receives this JSON payload:
+
+```json
+{
+  "full_name": "Test Student",
+  "email": "test@example.com",
+  "phone": "+234 801 234 5678",
+  "course_of_interest": "Full-Stack AI Engineering",
+  "message": "The student's original chat message",
+  "source": "ZubeVision Tech Academy AI Assistant"
+}
+```
+
+Automation behavior:
+
+- A Make failure does not undo the Supabase save or break the chat response.
+- Failed notifications remain `notification_sent=false`.
+- A repeated matching submission retries a pending notification.
+- A lead already marked `notification_sent=true` is not inserted or emailed again.
+- Make is called only after Supabase has returned the saved lead.
+
+### Testing The Automation
+
+1. Start the Make scenario or click **Run once** while configuring it.
+2. Restart the backend after changing `backend/.env`.
+3. Submit all required lead details in one chat message:
+
+```text
+My name is Test Student. My email is test@example.com.
+My phone is +234 801 234 5678.
+I am interested in Full-Stack AI Engineering.
+```
+
+Confirm that:
+
+- The chat responds normally.
+- Supabase contains the lead with the correct details.
+- `notification_sent` changes to `true`.
+- Make records a successful scenario execution.
+- The configured recipient receives the email.
+
+Submitting the same details again should not create another lead or send another
+email. Use a different email or phone number for another fresh end-to-end test.
 
 Frontend environment file:
 
@@ -225,11 +314,12 @@ npm run lint
 npm run build
 ```
 
-Backend syntax check:
+Backend checks:
 
 ```powershell
 cd backend
-..\.venv\Scripts\python.exe -m py_compile run.py app\config.py app\main.py
+..\.venv\Scripts\python.exe -m unittest discover -s tests -v
+..\.venv\Scripts\python.exe -m compileall -q app tests
 ```
 
 ## Documentation

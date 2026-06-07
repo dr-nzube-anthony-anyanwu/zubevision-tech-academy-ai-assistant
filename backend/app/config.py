@@ -10,6 +10,7 @@ class Settings:
 
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    MAKE_WEBHOOK_URL: str = os.getenv("MAKE_WEBHOOK_URL", "")
 
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3003")
     BACKEND_HOST: str = os.getenv("BACKEND_HOST", "127.0.0.1")

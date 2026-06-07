@@ -17,6 +17,7 @@ The product currently has:
 - A FastAPI backend in `backend/`
 - A Next.js frontend in `frontend/`
 - A markdown knowledge base in `knowledge_base/knowledge_base.md`
+- Supabase lead capture with Make email automation
 - A local Python 3.11 virtual environment in `.venv/`
 - One professional root `README.md` as the single public README for the repository
 
@@ -71,6 +72,7 @@ backend/
 |   +-- services/
 |   |   +-- ai_service.py
 |   |   +-- lead_service.py
+|   |   +-- notification_service.py
 |   |   +-- knowledge_service.py
 |   +-- database/
 |   |   +-- supabase_client.py
@@ -78,6 +80,9 @@ backend/
 |       +-- system_prompt.py
 +-- .env
 +-- requirements.txt
++-- tests/
+|   +-- test_lead_service.py
+|   +-- test_notification_service.py
 +-- run.py
 ```
 
@@ -98,6 +103,7 @@ OPENROUTER_API_KEY=
 OPENROUTER_MODEL=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+MAKE_WEBHOOK_URL=
 FRONTEND_URL=http://localhost:3003
 BACKEND_HOST=127.0.0.1
 BACKEND_PORT=8003
@@ -126,6 +132,66 @@ or:
 ```powershell
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8003
 ```
+
+## Supabase Lead Capture And Make Automation
+
+The completed automation uses the existing backend service layer:
+
+```text
+Complete student details
+        |
+        v
+lead_service.py extracts and checks the lead
+        |
+        v
+Supabase stores or returns the matching lead
+        |
+        v
+notification_service.py posts to Make
+        |
+        v
+Make sends the instructor/admin email
+        |
+        v
+Supabase notification_sent becomes true
+```
+
+Live Supabase schema verified on June 7, 2026:
+
+```text
+id
+full_name
+email
+phone
+course
+created_at
+notification_sent
+```
+
+Important implementation decisions:
+
+- The database column remains `course`; the Make payload maps it to
+  `course_of_interest`.
+- The Make payload contains `full_name`, `email`, `phone`,
+  `course_of_interest`, `message`, and `source`.
+- `notification_sent` is explicitly `false` for a new lead.
+- It changes to `true` only after Make returns a successful HTTP response.
+- A Make timeout or HTTP failure does not fail the working chat or remove the
+  saved lead.
+- Matching name, email, phone, and course values reuse the existing lead.
+- An existing lead with `notification_sent=false` retries the Make request.
+- An existing lead with `notification_sent=true` does not generate another
+  row or email.
+- Name extraction stops at the next lead field so values such as
+  `My email is...` are not included in `full_name`.
+
+The webhook URL is stored only in `backend/.env`:
+
+```env
+MAKE_WEBHOOK_URL=https://hook.example.make.com/your-webhook-id
+```
+
+Do not commit the real webhook URL.
 
 ## Frontend
 
@@ -281,6 +347,14 @@ Fix implemented in `frontend/app/layout.tsx`:
 - Assistant output showed raw Markdown. Fixed by adding simple response formatting in `ChatInterface.tsx`.
 - Hydration mismatch appeared due to a browser-injected body attribute. Fixed with `suppressHydrationWarning`.
 - `next/font/google` failed during build because the environment could not fetch Google Fonts. Fixed by using CSS font stacks.
+- Generic Make sample code targeted a nonexistent `backend/main.py` lead flow.
+  The integration was instead added to the existing
+  `backend/app/services/lead_service.py` service boundary.
+- A webhook failure could have turned successful chats into HTTP 500 responses.
+  The notification service now treats Make as a non-blocking follow-up after
+  the lead is safely stored.
+- The initial lead name pattern could capture text from the following email
+  field. The parser was narrowed to stop at field and sentence boundaries.
 
 ## Verification Done
 
@@ -297,9 +371,29 @@ Backend Python syntax was checked earlier with:
 ..\.venv\Scripts\python.exe -m py_compile run.py app\config.py app\main.py
 ```
 
+Make automation verification completed on June 7, 2026:
+
+```powershell
+cd backend
+..\.venv\Scripts\python.exe -m unittest discover -s tests -v
+..\.venv\Scripts\python.exe -m compileall -q app tests
+```
+
+Results:
+
+- 10 focused backend tests passed.
+- Make-compatible payload mapping passed.
+- Successful notification status updates passed.
+- Failed webhook pending-state behavior passed.
+- Duplicate lead and duplicate email prevention passed.
+- Pending notification retry behavior passed.
+- Name extraction boundary tests passed.
+- The user completed a live end-to-end test and confirmed that Supabase, Make,
+  and email delivery work correctly.
+
 ## Where We Stopped
 
-As of May 12, 2026:
+As of June 7, 2026:
 
 - Backend structure is in place.
 - Backend is configured for Python 3.11 and port `8003`.
@@ -311,12 +405,17 @@ As of May 12, 2026:
 - Embeddable widget route and script are implemented with ZubeVision branding.
 - Lint and build pass for frontend.
 - Documentation has been consolidated into one root `README.md`; the frontend README was removed to avoid duplicate project docs.
+- Complete leads are stored in Supabase and sent to Make for email notification.
+- Duplicate matching leads do not create duplicate rows or emails.
+- Failed Make notifications remain pending and can be retried.
+- The Make automation was confirmed working in a live end-to-end user test.
 
 ## Recommended Next Steps
 
 - Expand `knowledge_base/knowledge_base.md` with the full academy course details, fees, schedules, FAQs, registration steps, refund rules, and contact details.
-- Confirm the Supabase `leads` table schema matches `lead_service.py`.
 - Add stronger backend validation and error handling for chat and lead capture.
+- Consider a scheduled retry process for pending rows where
+  `notification_sent=false`, so retries do not depend on a repeated submission.
 - Add loading indicators beyond plain text, such as animated typing dots.
 - Add a proper deployment plan for frontend and backend.
 - Consider moving secrets out of local `.env` before sharing or committing the project.
