@@ -222,6 +222,106 @@ Expected frontend key:
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8003
 ```
 
+## Production Deployment
+
+The frontend is designed for Vercel and the backend is designed for Render.
+This repository is a monorepo, so each platform must use the correct project
+directory.
+
+### 1. Deploy The Backend To Render
+
+The repository includes a root-level `render.yaml` Blueprint. It intentionally
+runs from the repository root so the existing
+`knowledge_base/knowledge_base.md` remains available to the backend. Do not
+copy the knowledge base into `backend/`; maintaining two copies could cause
+production answers to drift from local answers.
+
+The Render start command is:
+
+```text
+uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+```
+
+Render supplies `PORT` automatically. A Railway `Procfile` is not required.
+
+Deployment steps:
+
+1. Push `render.yaml` to GitHub.
+2. Open the Render Blueprint creation page for this repository.
+3. Set the prompted environment variables:
+
+```env
+OPENROUTER_API_KEY=
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+MAKE_WEBHOOK_URL=
+FRONTEND_URL=http://localhost:3003
+```
+
+4. Apply the Blueprint and wait for the service to become live.
+5. Confirm these URLs return successful responses:
+
+```text
+https://your-render-service.onrender.com/
+https://your-render-service.onrender.com/health
+```
+
+The Blueprint pins Python 3.11, installs `backend/requirements.txt`, uses the
+existing `/health` endpoint, and redeploys when backend or knowledge-base files
+change.
+
+### 2. Deploy The Frontend To Vercel
+
+Import the same GitHub repository into Vercel and configure:
+
+```text
+Root Directory: frontend
+Framework Preset: Next.js
+```
+
+Add this Vercel environment variable for the Production environment:
+
+```env
+NEXT_PUBLIC_BACKEND_URL=https://your-render-service.onrender.com
+```
+
+Deploy the frontend. Preview deployments use changing Vercel origins, so the
+backend's current single-origin CORS setting is intended for the final
+production deployment.
+
+After Vercel assigns the production URL, update the Render `FRONTEND_URL`
+environment variable to that exact origin, without a trailing slash:
+
+```env
+FRONTEND_URL=https://your-vercel-project.vercel.app
+```
+
+Then redeploy the Render service so the backend CORS configuration uses the
+final frontend origin.
+
+### 3. Production Verification
+
+1. Open the Vercel production URL and send a normal academy question.
+2. Confirm the browser request to `/api/chat` succeeds.
+3. Submit a complete test lead and confirm Supabase and Make behave as they do
+   locally.
+4. Load the production widget page:
+
+```text
+https://your-vercel-project.vercel.app/widget
+```
+
+5. Use the production widget script on external sites:
+
+```html
+<script
+  src="https://your-vercel-project.vercel.app/chat-widget.js"
+  data-client-id="zubevision-tech-academy"
+  data-widget-url="https://your-vercel-project.vercel.app/widget"
+  data-color="#00A8A8"
+></script>
+```
+
 ## Branding And UI
 
 The frontend implements the ZubeVision visual identity:

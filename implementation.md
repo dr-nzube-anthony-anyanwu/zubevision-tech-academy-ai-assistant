@@ -338,6 +338,75 @@ Fix implemented in `frontend/app/layout.tsx`:
 <body suppressHydrationWarning>{children}</body>
 ```
 
+## Vercel And Render Deployment Preparation
+
+Deployment configuration was prepared on June 13, 2026:
+
+- Frontend target: Vercel
+- Backend target: Render
+- Source: the existing GitHub monorepo
+- Vercel root directory: `frontend`
+- Render configuration: root-level `render.yaml`
+
+The proposed Railway instructions were adapted to this repository instead of
+being copied directly.
+
+Knowledge-base decision:
+
+- `knowledge_base/knowledge_base.md` remains the single canonical file.
+- It was not copied into `backend/`, because duplicate copies could drift.
+- Render runs from the repository root, so the existing knowledge-service path
+  works locally and in production.
+
+Render commands:
+
+```text
+Build: pip install -r backend/requirements.txt
+Start: uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
+Health check: /health
+Python: 3.11.11
+```
+
+The Blueprint redeploys for changes under `backend/**`,
+`knowledge_base/**`, or `render.yaml`.
+
+Render secrets are declared with `sync: false` and must be entered in the
+Dashboard:
+
+```env
+OPENROUTER_API_KEY=
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+MAKE_WEBHOOK_URL=
+FRONTEND_URL=
+```
+
+No Railway `Procfile` was added. Render provides `PORT` automatically to the
+Blueprint start command.
+
+Vercel settings:
+
+```text
+Root Directory: frontend
+Framework Preset: Next.js
+```
+
+Required Vercel production environment variable:
+
+```env
+NEXT_PUBLIC_BACKEND_URL=https://your-render-service.onrender.com
+```
+
+After Vercel assigns the final production URL, Render must use that exact
+origin for CORS:
+
+```env
+FRONTEND_URL=https://your-vercel-project.vercel.app
+```
+
+The production widget will be served by Vercel at `/widget` and
+`/chat-widget.js`.
+
 ## Challenges And Fixes
 
 - Python 3.13 appeared in the terminal because the project venv was not activated. Fixed by creating `.venv/` with Python 3.11 and documenting activation commands.
@@ -355,6 +424,9 @@ Fix implemented in `frontend/app/layout.tsx`:
   the lead is safely stored.
 - The initial lead name pattern could capture text from the following email
   field. The parser was narrowed to stop at field and sentence boundaries.
+- Generic Railway advice suggested duplicating the knowledge base and adding a
+  `Procfile`. The Render setup instead keeps one knowledge base and uses an
+  explicit Uvicorn command in the root Blueprint.
 
 ## Verification Done
 
@@ -391,9 +463,18 @@ Results:
 - The user completed a live end-to-end test and confirmed that Supabase, Make,
   and email delivery work correctly.
 
+Deployment preparation verification completed on June 13, 2026:
+
+- All 10 backend unit tests passed.
+- The backend imported successfully through the Render-style app path.
+- The root knowledge base loaded successfully with 3,287 characters.
+- Frontend lint passed.
+- The Next.js production build passed.
+- `git diff --check` found no whitespace errors.
+
 ## Where We Stopped
 
-As of June 7, 2026:
+As of June 13, 2026:
 
 - Backend structure is in place.
 - Backend is configured for Python 3.11 and port `8003`.
@@ -409,13 +490,23 @@ As of June 7, 2026:
 - Duplicate matching leads do not create duplicate rows or emails.
 - Failed Make notifications remain pending and can be retried.
 - The Make automation was confirmed working in a live end-to-end user test.
+- A root `render.yaml` is ready for the Render backend deployment.
+- The backend continues using the root knowledge base without duplication.
+- The README documents the Vercel frontend and Render backend deployment flow.
+- The project is deployment-ready but has not yet been created on either
+  hosting platform.
 
 ## Recommended Next Steps
 
+- Create the backend from `render.yaml` in Render and enter the required
+  secret environment variables.
+- Import the repository into Vercel with `frontend` as the root directory.
+- Set `NEXT_PUBLIC_BACKEND_URL` in Vercel, then update Render `FRONTEND_URL`
+  with the final Vercel production origin.
+- Complete production chat, lead-capture, Make, health-check, and widget tests.
 - Expand `knowledge_base/knowledge_base.md` with the full academy course details, fees, schedules, FAQs, registration steps, refund rules, and contact details.
 - Add stronger backend validation and error handling for chat and lead capture.
 - Consider a scheduled retry process for pending rows where
   `notification_sent=false`, so retries do not depend on a repeated submission.
 - Add loading indicators beyond plain text, such as animated typing dots.
-- Add a proper deployment plan for frontend and backend.
 - Consider moving secrets out of local `.env` before sharing or committing the project.
