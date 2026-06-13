@@ -224,33 +224,33 @@ NEXT_PUBLIC_BACKEND_URL=http://localhost:8003
 
 ## Production Deployment
 
-The frontend is designed for Vercel and the backend is designed for Railway.
+The frontend is designed for Vercel and the backend is designed for Render.
 This repository is a monorepo, so each platform must use the correct project
 directory.
 
-### 1. Deploy The Backend To Railway
+### 1. Deploy The Backend To Render
 
-The repository includes a root-level `railway.json`. The Railway service must
-use the repository root, not `/backend`, so the existing
+The repository includes a root-level `render.yaml` Blueprint. It runs from the
+repository root so the existing
 `knowledge_base/knowledge_base.md` remains available to the backend. Do not
 copy the knowledge base into `backend/`; maintaining two copies could cause
 production answers to drift from local answers.
 
-The Railway start command is:
+The Render start command is:
 
 ```text
 uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
 ```
 
-Railway supplies `PORT` automatically. A `Procfile` is not required because
-the start command is defined in `railway.json`.
+Render supplies `PORT` automatically. A `Procfile` is not required because the
+start command is defined in `render.yaml`.
 
 Deployment steps:
 
-1. Create a Railway project and choose **Deploy from GitHub repo**.
-2. Select this repository.
-3. Keep the service root directory at the repository root.
-4. Add these service variables in Railway:
+1. Create a Render account and open the Blueprint creation page.
+2. Connect this GitHub repository.
+3. Render will read the root-level `render.yaml`.
+4. Enter the prompted secret environment variables:
 
 ```env
 OPENROUTER_API_KEY=
@@ -261,18 +261,21 @@ MAKE_WEBHOOK_URL=
 FRONTEND_URL=http://localhost:3003
 ```
 
-5. Deploy the service.
-6. In the service settings, generate a public Railway domain.
-7. Confirm these URLs return successful responses:
+5. Apply the Blueprint and wait for the service to become live.
+6. Confirm these URLs return successful responses:
 
 ```text
-https://your-railway-service.up.railway.app/
-https://your-railway-service.up.railway.app/health
+https://your-render-service.onrender.com/
+https://your-render-service.onrender.com/health
 ```
 
-The repository's `.python-version` pins Python 3.11. Railway installs
-`backend/requirements.txt`, starts the existing FastAPI application, checks
-`/health`, and redeploys when backend or knowledge-base files change.
+The Blueprint pins Python 3.11, installs `backend/requirements.txt`, starts the
+existing FastAPI application, checks `/health`, and redeploys when backend or
+knowledge-base files change.
+
+Render's Free web service spins down after 15 minutes without traffic. The
+first request after that can take about one minute while the backend wakes up.
+This is expected Free-plan behavior.
 
 ### 2. Deploy The Frontend To Vercel
 
@@ -286,21 +289,21 @@ Framework Preset: Next.js
 Add this Vercel environment variable for the Production environment:
 
 ```env
-NEXT_PUBLIC_BACKEND_URL=https://your-railway-service.up.railway.app
+NEXT_PUBLIC_BACKEND_URL=https://your-render-service.onrender.com
 ```
 
 Deploy the frontend. Preview deployments use changing Vercel origins, so the
 backend's current single-origin CORS setting is intended for the final
 production deployment.
 
-After Vercel assigns the production URL, update the Railway `FRONTEND_URL`
+After Vercel assigns the production URL, update the Render `FRONTEND_URL`
 environment variable to that exact origin, without a trailing slash:
 
 ```env
 FRONTEND_URL=https://your-vercel-project.vercel.app
 ```
 
-Then redeploy the Railway service so the backend CORS configuration uses the
+Then redeploy the Render service so the backend CORS configuration uses the
 final frontend origin.
 
 ### 3. Production Verification

@@ -338,39 +338,40 @@ Fix implemented in `frontend/app/layout.tsx`:
 <body suppressHydrationWarning>{children}</body>
 ```
 
-## Vercel And Railway Deployment Preparation
+## Vercel And Render Deployment Preparation
 
 Deployment configuration was prepared on June 13, 2026:
 
 - Frontend target: Vercel
-- Backend target: Railway
+- Backend target: Render Free web service
 - Source: the existing GitHub monorepo
 - Vercel root directory: `frontend`
-- Railway configuration: root-level `railway.json`
+- Render configuration: root-level `render.yaml`
 
-The initial deployment preparation mistakenly targeted Render. It was
-corrected to Railway on June 13, 2026.
+Railway was considered, but its trial had ended and required a paid upgrade.
+The backend target was therefore changed to Render's Free web service on
+June 13, 2026.
 
 Knowledge-base decision:
 
 - `knowledge_base/knowledge_base.md` remains the single canonical file.
 - It was not copied into `backend/`, because duplicate copies could drift.
-- Railway deploys from the repository root, so the existing knowledge-service
+- Render deploys from the repository root, so the existing knowledge-service
   path works locally and in production.
 
-Railway commands:
+Render commands:
 
 ```text
 Build: pip install -r backend/requirements.txt
 Start: uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port $PORT
 Health check: /health
-Python: 3.11 through .python-version
+Python: 3.11.11
 ```
 
-The Railway configuration watches `backend/**`, `knowledge_base/**`,
-`railway.json`, and `.python-version`.
+The Render Blueprint watches `backend/**`, `knowledge_base/**`,
+`render.yaml`, and `.python-version`.
 
-Railway service variables must be entered in the Dashboard:
+Render secret environment variables must be entered in the Dashboard:
 
 ```env
 OPENROUTER_API_KEY=
@@ -381,9 +382,17 @@ MAKE_WEBHOOK_URL=
 FRONTEND_URL=
 ```
 
-No `Procfile` was added because `railway.json` defines the build, start,
-health-check, watch-pattern, and restart settings. Railway provides `PORT`
+No `Procfile` was added because `render.yaml` defines the build, start,
+health-check, build-filter, and environment settings. Render provides `PORT`
 automatically.
+
+Render Free-plan behavior:
+
+- The service spins down after 15 minutes without inbound traffic.
+- The first request after sleeping can take about one minute.
+- The service uses an ephemeral filesystem, which is acceptable because the
+  knowledge base is committed to Git and persistent data is stored in
+  Supabase.
 
 Vercel settings:
 
@@ -395,10 +404,10 @@ Framework Preset: Next.js
 Required Vercel production environment variable:
 
 ```env
-NEXT_PUBLIC_BACKEND_URL=https://your-railway-service.up.railway.app
+NEXT_PUBLIC_BACKEND_URL=https://your-render-service.onrender.com
 ```
 
-After Vercel assigns the final production URL, Railway must use that exact
+After Vercel assigns the final production URL, Render must use that exact
 origin for CORS:
 
 ```env
@@ -425,9 +434,11 @@ The production widget will be served by Vercel at `/widget` and
   the lead is safely stored.
 - The initial lead name pattern could capture text from the following email
   field. The parser was narrowed to stop at field and sentence boundaries.
-- Setting Railway's root directory to `/backend` would exclude the root
-  knowledge base. The service instead deploys from the repository root with
-  explicit build and Uvicorn start commands in `railway.json`.
+- Deploying only `backend/` would exclude the root knowledge base. Render
+  instead builds from the repository root with explicit build and Uvicorn
+  start commands in `render.yaml`.
+- Railway required a paid upgrade after its trial ended. The backend deployment
+  was switched to Render's Free web service.
 
 ## Verification Done
 
@@ -467,7 +478,7 @@ Results:
 Deployment preparation verification completed on June 13, 2026:
 
 - All 10 backend unit tests passed.
-- The backend imported successfully through the Railway start-command path.
+- The backend imported successfully through the Render start-command path.
 - The root knowledge base loaded successfully with 3,287 characters.
 - Frontend lint passed.
 - The Next.js production build passed.
@@ -491,18 +502,18 @@ As of June 13, 2026:
 - Duplicate matching leads do not create duplicate rows or emails.
 - Failed Make notifications remain pending and can be retried.
 - The Make automation was confirmed working in a live end-to-end user test.
-- A root `railway.json` is ready for the Railway backend deployment.
+- A root `render.yaml` is ready for the Render backend deployment.
 - The backend continues using the root knowledge base without duplication.
-- The README documents the Vercel frontend and Railway backend deployment flow.
+- The README documents the Vercel frontend and Render backend deployment flow.
 - The project is deployment-ready but has not yet been created on either
   hosting platform.
 
 ## Recommended Next Steps
 
-- Create the backend service from the GitHub repository in Railway and enter
-  the required service variables.
+- Create the backend from `render.yaml` in Render and enter the required secret
+  environment variables.
 - Import the repository into Vercel with `frontend` as the root directory.
-- Set `NEXT_PUBLIC_BACKEND_URL` in Vercel, then update Railway `FRONTEND_URL`
+- Set `NEXT_PUBLIC_BACKEND_URL` in Vercel, then update Render `FRONTEND_URL`
   with the final Vercel production origin.
 - Complete production chat, lead-capture, Make, health-check, and widget tests.
 - Expand `knowledge_base/knowledge_base.md` with the full academy course details, fees, schedules, FAQs, registration steps, refund rules, and contact details.
